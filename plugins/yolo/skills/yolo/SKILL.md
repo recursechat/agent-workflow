@@ -1,7 +1,7 @@
 ---
 name: yolo
 description: Set up PermissionRequest hooks for the current project or user
-argument-hint: [approve-all|review|off] [--global]
+argument-hint: [approve-all|approve-websearch|review|off] [--global]
 disable-model-invocation: true
 ---
 
@@ -10,6 +10,7 @@ Set up a PermissionRequest hook that auto-handles permission prompts.
 ## Arguments
 
 - `/yolo approve-all` — auto-approve everything (no security review)
+- `/yolo approve-websearch` — auto-approve WebSearch and WebFetch only; all other tools fall through to the normal permission dialog
 - `/yolo review` — route each permission request to Claude for security review via `claude -p`
 - `/yolo off` — remove the PermissionRequest hook
 - Add `--global` to any command to apply to `~/.claude/settings.json` instead of the project's `.claude/settings.local.json`
@@ -37,6 +38,23 @@ Set `hooks.PermissionRequest` in the settings to:
       {
         "type": "command",
         "command": "INPUT=$(cat); TOOL=$(echo \"$INPUT\" | grep -o '\"tool_name\":\"[^\"]*\"' | head -1 | sed 's/\"tool_name\":\"//;s/\"//'); if [ \"$TOOL\" = \"AskUserQuestion\" ]; then echo '{}'; else echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PermissionRequest\",\"decision\":{\"behavior\":\"allow\"}}}'; fi"
+      }
+    ]
+  }
+]
+```
+
+### `approve-websearch`
+
+Set `hooks.PermissionRequest` in the settings to:
+
+```json
+[
+  {
+    "hooks": [
+      {
+        "type": "command",
+        "command": "INPUT=$(cat); TOOL=$(echo \"$INPUT\" | grep -o '\"tool_name\":\"[^\"]*\"' | head -1 | sed 's/\"tool_name\":\"//;s/\"//'); if [ \"$TOOL\" = \"AskUserQuestion\" ]; then echo '{}'; elif [ \"$TOOL\" = \"WebSearch\" ] || [ \"$TOOL\" = \"WebFetch\" ]; then echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PermissionRequest\",\"decision\":{\"behavior\":\"allow\"}}}'; else echo '{}'; fi"
       }
     ]
   }
